@@ -8,14 +8,15 @@
 Local-first dashboard, Codex plugin, and companion skill for understanding where your Codex tokens and usage credits are going.
 
 [![CI](https://github.com/douglasmonsky/codex-usage-tracker/actions/workflows/ci.yml/badge.svg)](https://github.com/douglasmonsky/codex-usage-tracker/actions/workflows/ci.yml)
-![Python 3.10-3.13](https://img.shields.io/badge/python-3.10--3.13-blue)
+[![PyPI](https://img.shields.io/pypi/v/codex-usage-tracking.svg)](https://pypi.org/project/codex-usage-tracking/)
+![Python 3.10-3.14](https://img.shields.io/badge/python-3.10--3.14-blue)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 > **Unofficial project:** Codex Usage Tracker is an independent open-source project. It is not made by, affiliated with, endorsed by, sponsored by, or supported by OpenAI. OpenAI and Codex are trademarks of OpenAI; this project only reads local log files from your machine.
 
 Codex Usage Tracker reads the JSONL logs already written by Codex, indexes aggregate usage counters into SQLite, and gives you a dashboard, CLI, and MCP tools for investigating real usage patterns. It keeps prompts, assistant messages, tool output, pasted secrets, and raw transcript content out of SQLite, CSV exports, and generated dashboard HTML.
 
-Built for developers using Codex locally who want to know which threads, models, subagents, and long chats are driving usage without uploading logs anywhere.
+Built for developers using Codex locally who want to know which threads, models, subagents, and long chats are driving usage without uploading logs anywhere. The public PyPI package is [`codex-usage-tracking`](https://pypi.org/project/codex-usage-tracking/), and it installs the `codex-usage-tracker` command.
 
 After install, you get a localhost dashboard, a local SQLite aggregate index, CLI reports, MCP tools, and a companion Codex skill for asking questions like "what drove my usage this week?"
 
@@ -24,16 +25,27 @@ After install, you get a localhost dashboard, a local SQLite aggregate index, CL
 ```bash
 python -m pip install --user pipx
 python -m pipx ensurepath
-python -m pipx install "git+https://github.com/douglasmonsky/codex-usage-tracker.git"
+pipx install codex-usage-tracking
 codex-usage-tracker setup
 codex-usage-tracker serve-dashboard --open
 ```
 
 Use your normal Python launcher for your platform: `python3` is common on macOS/Linux, and `py` may be preferable on Windows. On macOS with Homebrew, `brew install pipx` is also fine.
+If `codex-usage-tracker` is not found after installing with pipx, open a new terminal or add the binary directory printed by `pipx ensurepath` to your `PATH`.
+
+`serve-dashboard` refreshes active-session usage before opening by default. Use `--no-refresh` only when you intentionally want to inspect the cached local index.
+
+Package naming: the PyPI distribution is `codex-usage-tracking`; the installed command is `codex-usage-tracker`; the GitHub repository remains `douglasmonsky/codex-usage-tracker`. The `codex-usage-tracker` PyPI name is not this project, so avoid similarly named packages when following these docs.
+
+Source install for development or branch testing:
+
+```bash
+pipx install "git+https://github.com/douglasmonsky/codex-usage-tracker.git"
+```
 
 `setup` installs or refreshes the local Codex plugin wrapper, initializes local config templates when needed, refreshes the aggregate index, runs `codex-usage-tracker doctor`, and tells you whether Codex needs a restart for plugin discovery.
 
-Want Codex to do it for you? Paste: `Install and configure Codex Usage Tracker from https://github.com/douglasmonsky/codex-usage-tracker, then run setup and open the dashboard.`
+Want Codex to do it for you? Paste: `Install codex-usage-tracking with pipx, run codex-usage-tracker setup, and open the Codex Usage Tracker dashboard.`
 
 After plugin discovery, Codex can use the companion usage skill to refresh local aggregates, call the MCP tools, and explain usage patterns conversationally. Examples: [MCP And Codex Skills](docs/mcp.md).
 
@@ -51,7 +63,7 @@ More install paths: [Install Guide](docs/install.md).
 
 ## Platform Support
 
-The core app is not macOS-only. The CLI, SQLite index, dashboard generator, and localhost server are Python-based and CI-tested on Ubuntu for Python 3.10-3.13. It defaults to `~/.codex` for local Codex logs and `~/.codex-usage-tracker` for tracker data; pass `--codex-home` or `--db` when your local layout differs. Codex plugin discovery depends on Codex's local plugin directories on your machine, so run `codex-usage-tracker doctor` after setup if plugin registration does not appear in Codex.
+The core app is not macOS-only. The CLI, SQLite index, dashboard generator, and localhost server are Python-based and CI-tested on Ubuntu for Python 3.10-3.14. The installed-package Docker smoke path uses `python:3.14-slim` by default so packaged resources and CLI entry points are exercised on the newest supported runtime. It defaults to `~/.codex` for local Codex logs and `~/.codex-usage-tracker` for tracker data; pass `--codex-home` or `--db` when your local layout differs. Codex plugin discovery depends on Codex's local plugin directories on your machine, so run `codex-usage-tracker doctor` after setup if plugin registration does not appear in Codex.
 
 ## Dashboard Preview
 
@@ -141,6 +153,34 @@ The tracker cannot read your logged-in ChatGPT plan or live remaining usage auto
 - Companion Codex skills for operational setup and conversational usage analysis.
 - Optional local pricing, Codex credit, allowance, threshold, project alias, and privacy-mode configuration.
 
+## Dashboard Language
+
+The dashboard supports localized UI text. English is the canonical catalog, and the project includes starter locale catalogs for common dashboard languages.
+
+Set the initial dashboard language with `--lang`:
+
+```bash
+codex-usage-tracker --lang vi serve-dashboard --open
+```
+
+Or set a default with:
+
+```bash
+CODEX_USAGE_TRACKER_LANG=vi codex-usage-tracker serve-dashboard --open
+```
+
+The dashboard also includes a language selector. Browser selections are stored locally and can override the generated default for that browser.
+
+Supported starter locales include English, Vietnamese, Spanish, French, German, Portuguese, Japanese, Simplified Chinese, Korean, Russian, Italian, and Arabic. This localizes dashboard UI text, not the full CLI output or data exports.
+
+### Adding A Dashboard Language
+
+1. Add a locale JSON file named by language code under `src/codex_usage_tracker/plugin_data/dashboard/locales/`.
+2. Include every key from the English catalog.
+3. Preserve every placeholder from the English string.
+4. Add the language code, native name, English name, and text direction to the supported language metadata.
+5. Run the i18n validation tests.
+
 ## Common Commands
 
 ```bash
@@ -148,7 +188,7 @@ codex-usage-tracker summary --preset last-7-days
 codex-usage-tracker query --since 2026-06-01 --min-credits 1
 codex-usage-tracker session <session-id>
 codex-usage-tracker export --output usage.csv
-codex-usage-tracker dashboard --open
+codex-usage-tracker open-dashboard
 codex-usage-tracker support-bundle --output ~/.codex-usage-tracker/support-bundle.json
 ```
 
@@ -160,7 +200,7 @@ The tracker stores aggregate metrics only: session ids, timestamps, local source
 
 It does **not** store prompts, assistant messages, tool output, pasted secrets, raw transcript snippets, or raw context in SQLite, CSV exports, generated dashboard HTML, or synthetic screenshots.
 
-On-demand context loading reads a single original local JSONL file only after an explicit row action, redacts common secret patterns, caps returned text size, and can be disabled with:
+On-demand context loading reads a single original local JSONL file only after an explicit row action, redacts common secret patterns, caps returned text size, and can start off until you enable it from the details panel:
 
 ```bash
 codex-usage-tracker serve-dashboard --no-context-api --open
@@ -192,8 +232,9 @@ Full model: [Privacy Guide](docs/privacy.md).
 Open a Codex session on your machine and paste this:
 
 ```text
-Install and configure Codex Usage Tracker from https://github.com/douglasmonsky/codex-usage-tracker.
-Use pipx if it is available. If pipx is missing, install it with the platform's Python launcher or use a local virtual environment.
+Install and configure Codex Usage Tracker.
+Install the PyPI distribution codex-usage-tracking with pipx. The installed command should be codex-usage-tracker. Use pipx install "git+https://github.com/douglasmonsky/codex-usage-tracker.git" only for branch testing or if PyPI is temporarily unavailable.
+If pipx is missing, install it with the platform's Python launcher or use a local virtual environment.
 After installation, run codex-usage-tracker setup and serve-dashboard --open.
 Verify the dashboard opens locally and tell me the dashboard URL plus whether I need to restart Codex for plugin discovery.
 ```
@@ -203,14 +244,18 @@ This is optional. The normal shell install above is the fastest trusted path for
 ## Current Limitations
 
 - This is a sidecar dashboard and plugin, not a native Codex chat overlay.
+- Codex upstream log formats can change, and parser compatibility may require tracker updates.
 - Token counts come from Codex's logged counters; the tracker does not re-tokenize prompts.
-- Pricing and Codex credit estimates depend on local rate data and confidence labels.
-- Remaining 5-hour and weekly allowance is not read automatically from the logged-in account.
+- Pricing and rate-card sources can change outside this project.
+- Pricing and Codex credit estimates depend on local rate data and confidence labels and are not guaranteed to match exact billing.
+- Live account allowance cannot be read automatically by this local tracker; remaining 5-hour and weekly allowance is only available when you configure copied values.
 - Local Codex logs may not include usage from other ChatGPT agentic surfaces that share the same allowance.
+- Plugin discovery limitations are separate from core Python CLI/dashboard support.
 - Parent-child thread relationships are only as good as the metadata Codex logs; inferred auto-review attachments are labeled as inferred.
 
 ## Roadmap
 
+- Keep Python runtime support validated with CI matrix coverage, package classifiers, release docs, and installed-package smoke tests.
 - Improve the `Set limits` flow with a paste/import experience for 5-hour and weekly allowance snapshots.
 - Track allowance snapshot history so local Codex credits can be compared against visible remaining-usage changes over time.
 - Clarify top-card token accounting by showing output tokens and reasoning output as a subset instead of implying all token cards add together.
